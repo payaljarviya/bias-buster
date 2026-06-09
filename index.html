@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bias Buster</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #7c3aed;
+    --purple-light: #a78bfa;
+    --purple-dark: #5b21b6;
+    --bg: #ffffff;
+    --bg2: #f7f5ff;
+    --bg3: #f0ecff;
+    --text: #1a1a2e;
+    --text2: #4b5563;
+    --fact: #059669;
+    --fact-bg: #ecfdf5;
+    --opinion: #d97706;
+    --opinion-bg: #fffbeb;
+    --misleading: #dc2626;
+    --misleading-bg: #fef2f2;
+    --radius: 16px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg2);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+
+  /* ---- SCREENS ---- */
+  .screen { display: none; width: 100%; max-width: 560px; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; }
+
+  /* ---- START SCREEN ---- */
+  #start-screen {
+    text-align: center;
+    gap: 24px;
+  }
+  .game-logo {
+    width: 80px; height: 80px;
+    background: var(--purple);
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px;
+    box-shadow: 0 8px 32px rgba(124,58,237,0.25);
+  }
+  .game-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    color: var(--purple);
+    line-height: 1.1;
+  }
+  .game-tagline {
+    font-size: 17px;
+    color: var(--text2);
+    max-width: 380px;
+    line-height: 1.6;
+  }
+  .how-to {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    width: 100%;
+    text-align: left;
+    border: 1.5px solid #ede9fe;
+  }
+  .how-to h3 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 12px;
+  }
+  .how-to-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+    font-size: 15px;
+    color: var(--text2);
+    line-height: 1.5;
+  }
+  .how-to-item:last-child { margin-bottom: 0; }
+  .badge {
+    flex-shrink: 0;
+    padding: 2px 10px;
+    border-radius: 100px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.fact { background: var(--fact-bg); color: var(--fact); }
+  .badge.opinion { background: var(--opinion-bg); color: var(--opinion); }
+  .badge.misleading { background: var(--misleading-bg); color: var(--misleading); }
+  .best-score-row {
+    font-size: 15px;
+    color: var(--text2);
+  }
+  .best-score-row span {
+    color: var(--purple);
+    font-weight: 600;
+  }
+  .btn-start {
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px 48px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+    width: 100%;
+  }
+  .btn-start:hover { background: var(--purple-dark); transform: translateY(-1px); }
+  .btn-start:active { transform: translateY(1px); }
+
+  /* ---- GAME SCREEN ---- */
+  #game-screen { gap: 16px; }
+  .hud {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 4px;
+  }
+  .lives { display: flex; gap: 6px; }
+  .heart {
+    font-size: 22px;
+    transition: transform 0.3s;
+  }
+  .heart.lost { filter: grayscale(1); opacity: 0.3; transform: scale(0.8); }
+  .score-display {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text2);
+  }
+  .score-display span { color: var(--purple); font-size: 22px; }
+  .level-badge {
+    background: var(--bg3);
+    color: var(--purple);
+    border-radius: 100px;
+    padding: 4px 14px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  /* Timer bar */
+  .timer-wrap {
+    width: 100%;
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 100px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    border-radius: 100px;
+    background: var(--purple);
+    transition: width 0.1s linear, background 0.3s;
+  }
+
+  /* Statement card */
+  .card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 28px 28px 24px;
+    width: 100%;
+    border: 1.5px solid #ede9fe;
+    box-shadow: 0 4px 24px rgba(124,58,237,0.07);
+    position: relative;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .card-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--purple-light);
+    margin-bottom: 12px;
+  }
+  .statement-text {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .streak-chip {
+    position: absolute;
+    top: -12px;
+    right: 16px;
+    background: var(--purple);
+    color: #fff;
+    border-radius: 100px;
+    padding: 3px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: all 0.3s;
+  }
+  .streak-chip.show { opacity: 1; transform: translateY(0); }
+
+  /* Answer buttons */
+  .answer-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    width: 100%;
+  }
+  .btn-answer {
+    border: none;
+    border-radius: 14px;
+    padding: 16px 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-answer:active { transform: scale(0.97); }
+  .btn-answer .btn-icon { display: block; font-size: 24px; margin-bottom: 6px; }
+  .btn-fact {
+    background: var(--fact-bg);
+    color: var(--fact);
+    border: 2px solid #a7f3d0;
+  }
+  .btn-fact:hover { box-shadow: 0 4px 16px rgba(5,150,105,0.2); transform: translateY(-1px); }
+  .btn-opinion {
+    background: var(--opinion-bg);
+    color: var(--opinion);
+    border: 2px solid #fcd34d;
+  }
+  .btn-opinion:hover { box-shadow: 0 4px 16px rgba(217,119,6,0.2); transform: translateY(-1px); }
+  .btn-misleading {
+    background: var(--misleading-bg);
+    color: var(--misleading);
+    border: 2px solid #fca5a5;
+  }
+  .btn-misleading:hover { box-shadow: 0 4px 16px rgba(220,38,38,0.2); transform: translateY(-1px); }
+
+  /* Feedback overlay on card */
+  .feedback-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: calc(var(--radius) - 1.5px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+    text-align: center;
+    backdrop-filter: blur(2px);
+  }
+  .feedback-overlay.show { opacity: 1; pointer-events: auto; }
+  .feedback-overlay.correct { background: rgba(236,253,245,0.97); }
+  .feedback-overlay.wrong { background: rgba(254,242,242,0.97); }
+  .feedback-icon { font-size: 36px; }
+  .feedback-result {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .feedback-overlay.correct .feedback-result { color: var(--fact); }
+  .feedback-overlay.wrong .feedback-result { color: var(--misleading); }
+  .feedback-explanation {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.5;
+    max-width: 340px;
+  }
+  .btn-next {
+    margin-top: 6px;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-next:hover { background: var(--purple-dark); }
+
+  /* Level up banner */
+  #lvlbanner {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.7);
+    background: var(--purple);
+    color: #fff;
+    border-radius: 20px;
+    padding: 24px 40px;
+    text-align: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 8px 40px rgba(124,58,237,0.4);
+  }
+  #lvlbanner.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  #lvlbanner .lvl-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    opacity: 0.75;
+    margin-bottom: 4px;
+  }
+  #lvlbanner .lvl-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+  }
+  #lvlbanner .lvl-tag {
+    font-size: 14px;
+    opacity: 0.8;
+    margin-top: 4px;
+  }
+
+  /* ---- GAME OVER SCREEN ---- */
+  #over-screen { gap: 20px; text-align: center; }
+  .over-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: var(--purple);
+  }
+  .over-subtitle { font-size: 16px; color: var(--text2); }
+  .score-card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    width: 100%;
+    border: 1.5px solid #ede9fe;
+    display: flex;
+    gap: 0;
+  }
+  .score-item {
+    flex: 1;
+    text-align: center;
+    padding: 0 8px;
+  }
+  .score-item + .score-item {
+    border-left: 1px solid #ede9fe;
+  }
+  .score-item .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 36px;
+    color: var(--purple);
+    line-height: 1.1;
+  }
+  .score-item .lbl {
+    font-size: 12px;
+    color: var(--text2);
+    margin-top: 4px;
+  }
+  .new-best {
+    display: none;
+    background: linear-gradient(135deg, #7c3aed, #a78bfa);
+    color: #fff;
+    border-radius: 100px;
+    padding: 6px 20px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+  .new-best.show { display: inline-block; }
+  .over-buttons { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+  .btn-play-again {
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: 14px;
+    padding: 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-play-again:hover { background: var(--purple-dark); }
+  .btn-home {
+    background: var(--bg3);
+    color: var(--purple);
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn-home:hover { background: #e0d9ff; }
+
+  /* Progress dots */
+  .progress-dots {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #e0d9ff;
+    transition: background 0.2s, transform 0.2s;
+  }
+  .dot.done { background: var(--purple); transform: scale(1.1); }
+  .dot.current { background: var(--purple-light); transform: scale(1.3); }
+
+  @media (max-width: 400px) {
+    .statement-text { font-size: 17px; }
+    .btn-answer { padding: 14px 6px; font-size: 13px; }
+    .btn-answer .btn-icon { font-size: 20px; }
+    .game-title { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- START SCREEN -->
+<div id="start-screen" class="screen active">
+  <div class="game-logo">🔍</div>
+  <div>
+    <div class="game-title">Bias Buster</div>
+  </div>
+  <div class="game-tagline">Can you tell the difference between a fact, an opinion, and misleading information? Put your critical thinking to the test.</div>
+
+  <div class="how-to">
+    <h3>How to play</h3>
+    <div class="how-to-item">
+      <span class="badge fact">Fact</span>
+      Something verifiable and objectively true
+    </div>
+    <div class="how-to-item">
+      <span class="badge opinion">Opinion</span>
+      A personal view or judgment — not provable
+    </div>
+    <div class="how-to-item">
+      <span class="badge misleading">Misleading</span>
+      Sounds true but distorts, exaggerates, or deceives
+    </div>
+  </div>
+
+  <div class="best-score-row">Best score: <span id="best-display">0</span></div>
+  <button class="btn-start" onclick="startGame()">Start Playing</button>
+</div>
+
+<!-- GAME SCREEN -->
+<div id="game-screen" class="screen">
+  <div class="hud">
+    <div class="lives" id="lives-display"></div>
+    <div class="level-badge" id="level-display">Level 1</div>
+    <div class="score-display"><span id="score-display">0</span> pts</div>
+  </div>
+
+  <div class="timer-wrap">
+    <div class="timer-bar" id="timer-bar"></div>
+  </div>
+
+  <div style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:0 4px;">
+    <div style="font-size:13px; color:var(--text2);">Statement <span id="q-num">1</span> of <span id="q-total">10</span></div>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+
+  <div class="card" id="statement-card">
+    <div class="card-label">Is this a fact, opinion, or misleading?</div>
+    <div class="statement-text" id="statement-text"></div>
+    <div class="streak-chip" id="streak-chip"></div>
+
+    <div class="feedback-overlay" id="feedback-overlay">
+      <div class="feedback-icon" id="feedback-icon"></div>
+      <div class="feedback-result" id="feedback-result"></div>
+      <div class="feedback-explanation" id="feedback-explanation"></div>
+      <button class="btn-next" onclick="nextQuestion()">Next →</button>
+    </div>
+  </div>
+
+  <div class="answer-buttons">
+    <button class="btn-answer btn-fact" onclick="answer('fact')">
+      <span class="btn-icon">✅</span>Fact
+    </button>
+    <button class="btn-answer btn-opinion" onclick="answer('opinion')">
+      <span class="btn-icon">💭</span>Opinion
+    </button>
+    <button class="btn-answer btn-misleading" onclick="answer('misleading')">
+      <span class="btn-icon">⚠️</span>Misleading
+    </button>
+  </div>
+
+  <div style="font-size:13px; color:var(--purple-light); text-align:center;">
+    Streak: <strong id="streak-display">0</strong> &nbsp;|&nbsp; Multiplier: <strong id="multiplier-display">1×</strong>
+  </div>
+</div>
+
+<!-- GAME OVER SCREEN -->
+<div id="over-screen" class="screen">
+  <div class="game-logo">🎯</div>
+  <div class="over-title" id="over-title">Game Over</div>
+  <div class="over-subtitle" id="over-subtitle">Here's how you did</div>
+  <span class="new-best" id="new-best-badge">🏆 New Best!</span>
+
+  <div class="score-card">
+    <div class="score-item">
+      <div class="val" id="final-score">0</div>
+      <div class="lbl">Score</div>
+    </div>
+    <div class="score-item">
+      <div class="val" id="final-correct">0</div>
+      <div class="lbl">Correct</div>
+    </div>
+    <div class="score-item">
+      <div class="val" id="final-best-streak">0</div>
+      <div class="lbl">Best Streak</div>
+    </div>
+    <div class="score-item">
+      <div class="val" id="final-best">0</div>
+      <div class="lbl">All-time Best</div>
+    </div>
+  </div>
+
+  <div class="over-buttons">
+    <button class="btn-play-again" onclick="startGame()">Play Again</button>
+    <button class="btn-home" onclick="showScreen('start-screen')">Back to Home</button>
+  </div>
+</div>
+
+<!-- Level up banner -->
+<div id="lvlbanner">
+  <div class="lvl-label">Level Up!</div>
+  <div class="lvl-name" id="lvl-name-text"></div>
+  <div class="lvl-tag" id="lvl-tag-text"></div>
+</div>
+
+<script>
+const STATEMENTS = [
+  // LEVEL 1 — Easy
+  { text: "The Earth is approximately 4.5 billion years old.", answer: "fact", explanation: "Confirmed by radiometric dating of rocks and meteorites across multiple independent studies.", level: 1 },
+  { text: "Pizza is the most delicious food ever created.", answer: "opinion", explanation: "Taste is subjective — what's delicious varies from person to person. No way to verify this as true or false.", level: 1 },
+  { text: "Humans only use 10% of their brains.", answer: "misleading", explanation: "A popular myth. Brain imaging shows we use virtually all of our brain — just different parts at different times.", level: 1 },
+  { text: "Mount Everest is the tallest mountain on Earth.", answer: "fact", explanation: "At 8,849 meters above sea level, Everest is the tallest measured from sea level. (Mauna Kea is tallest from base to peak.)", level: 1 },
+  { text: "The Great Wall of China is visible from space with the naked eye.", answer: "misleading", explanation: "Astronauts have confirmed it's not visible from space without aid — it's simply too narrow (about the width of a highway).", level: 1 },
+  { text: "Smartphones are making teenagers less happy.", answer: "opinion", explanation: "Researchers disagree on this. Whether net impact is negative depends heavily on usage patterns and individual context.", level: 1 },
+  { text: "Lightning never strikes the same place twice.", answer: "misleading", explanation: "False — lightning frequently strikes the same spot. The Empire State Building is struck roughly 20–25 times per year.", level: 1 },
+  { text: "The human body has 206 bones in adulthood.", answer: "fact", explanation: "Adults have 206 bones. Babies are born with around 270, which gradually fuse over time.", level: 1 },
+  { text: "Reading books is better for you than watching TV.", answer: "opinion", explanation: "Depends on what you read or watch, and how you define 'better'. This is a value judgment, not a measurable fact.", level: 1 },
+  { text: "Dogs are better pets than cats.", answer: "opinion", explanation: "Pet preference is entirely subjective. Millions of people worldwide happily disagree with this!", level: 1 },
+
+  // LEVEL 2 — Medium
+  { text: "Studies show coffee drinkers live longer.", answer: "misleading", explanation: "Correlation isn't causation. Coffee drinkers may share other healthy habits. Headlines routinely oversimplify complex research.", level: 2 },
+  { text: "9 out of 10 dentists recommend this toothpaste.", answer: "misleading", explanation: "Which dentists? Paid by whom? Recommend it over what alternatives? This classic ad claim is effectively unfalsifiable.", level: 2 },
+  { text: "The Paris Agreement was signed by 196 countries.", answer: "fact", explanation: "The Paris Climate Agreement has 196 parties — a verifiable diplomatic fact from official UN records.", level: 2 },
+  { text: "More people die from selfies than shark attacks each year.", answer: "misleading", explanation: "While sometimes numerically true, it lumps wildly different causes (cliff falls, traffic) under 'selfies', creating a false impression.", level: 2 },
+  { text: "Organic food is healthier than conventional food.", answer: "misleading", explanation: "'Healthier' is vague. Research shows organic has fewer pesticide residues but similar nutritional content to conventional food.", level: 2 },
+  { text: "Working from home reduces productivity.", answer: "opinion", explanation: "Studies are deeply mixed and depend on job type, individual, and how productivity is measured. This is a contested, value-laden claim.", level: 2 },
+  { text: "Sugar is more addictive than cocaine.", answer: "misleading", explanation: "Based on a few rat studies later disputed in humans. The comparison dramatically overstates what the science actually shows.", level: 2 },
+  { text: "Social media is the biggest threat to democracy.", answer: "opinion", explanation: "'Biggest threat' is a ranking judgment. Many experts point to other factors as equal or greater threats.", level: 2 },
+  { text: "This new drug has been FDA approved.", answer: "misleading", explanation: "FDA approval covers manufacturing safety and specific conditions — not blanket endorsement of effectiveness or freedom from side effects.", level: 2 },
+  { text: "Violent video games cause violent behavior in children.", answer: "misleading", explanation: "Decades of research show no consistent causal link. Many countries with high gaming rates have very low violence rates.", level: 2 },
+
+  // LEVEL 3 — Hard
+  { text: "Scientists are divided on whether human activity causes climate change.", answer: "misleading", explanation: "Over 97% of climate scientists agree on human-caused climate change. 'Divided' falsely implies a near 50/50 scientific split.", level: 3 },
+  { text: "Vaccines have saved millions of lives.", answer: "fact", explanation: "The WHO estimates vaccines prevent 2–3 million deaths annually. This is supported by decades of global public health data.", level: 3 },
+  { text: "Natural remedies are safer than pharmaceutical drugs.", answer: "misleading", explanation: "'Natural' doesn't mean safe — arsenic, mercury, and many poisons are natural. Many pharmaceuticals are plant-derived and rigorously tested.", level: 3 },
+  { text: "AI will create more jobs than it destroys.", answer: "opinion", explanation: "Economists genuinely disagree. This is a prediction about an uncertain future — not yet verifiable as fact.", level: 3 },
+  { text: "Eating breakfast is the most important meal of the day.", answer: "misleading", explanation: "This phrase was popularized by cereal companies in early 1900s advertising — not by nutritional science.", level: 3 },
+  { text: "Crime rates have been rising for the past decade.", answer: "misleading", explanation: "Depends on the country, crime type, and measurement method. In many places, violent crime peaked in the 1990s and has since fallen.", level: 3 },
+  { text: "This product is made with all-natural ingredients.", answer: "misleading", explanation: "'Natural' has no regulated definition in most countries. It's a marketing term, not a safety or quality standard.", level: 3 },
+  { text: "The universe is approximately 13.8 billion years old.", answer: "fact", explanation: "This is the scientific consensus based on cosmic microwave background radiation measurements and multiple independent methods.", level: 3 },
+  { text: "Immigrants take jobs away from native workers.", answer: "misleading", explanation: "Economists overwhelmingly find immigrants grow the overall economy and create jobs. The 'fixed pie' assumption behind this claim is false.", level: 3 },
+  { text: "We should invest more in mental health services.", answer: "opinion", explanation: "While mental health funding gaps are a fact, 'should invest more' is a policy value judgment people can legitimately disagree on.", level: 3 },
+  { text: "Drinking 8 glasses of water a day is necessary for good health.", answer: "misleading", explanation: "This widely cited rule has no strong scientific backing. Hydration needs vary by body size, activity, climate, and diet.", level: 3 },
+  { text: "People are fundamentally more divided today than they were 50 years ago.", answer: "misleading", explanation: "Political polarization measures are mixed. 50 years ago included the Vietnam War, civil rights conflict, and extreme social divisions.", level: 3 },
+];
+
+const LEVELS = [
+  { name: 'Level 1', tag: 'Beginner — Getting started', time: 15 },
+  { name: 'Level 2', tag: 'Intermediate — Tricky claims', time: 12 },
+  { name: 'Level 3', tag: 'Expert — Subtle deception', time: 10 },
+];
+
+const QUESTIONS_PER_LEVEL = 10;
+const MAX_LIVES = 3;
+
+let state = {};
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function initState() {
+  const shuffled = shuffleStatements();
+  state = {
+    questions: shuffled,
+    qIndex: 0,
+    score: 0,
+    lives: MAX_LIVES,
+    streak: 0,
+    bestStreak: 0,
+    correct: 0,
+    level: 1,
+    timerInterval: null,
+    timeLeft: LEVELS[0].time,
+    answered: false,
+    levelShown: false,
+  };
+}
+
+function shuffleStatements() {
+  const byLevel = [
+    shuffle(STATEMENTS.filter(s => s.level === 1)).slice(0, QUESTIONS_PER_LEVEL),
+    shuffle(STATEMENTS.filter(s => s.level === 2)).slice(0, QUESTIONS_PER_LEVEL),
+    shuffle(STATEMENTS.filter(s => s.level === 3)).slice(0, QUESTIONS_PER_LEVEL),
+  ];
+  return [...byLevel[0], ...byLevel[1], ...byLevel[2]];
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function startGame() {
+  initState();
+  document.getElementById('best-display').textContent = getBest();
+  showScreen('game-screen');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = state.questions[state.qIndex];
+  const total = state.questions.length;
+
+  // Determine level
+  const newLevel = q.level;
+  if (newLevel !== state.level) {
+    state.level = newLevel;
+    showLevelBanner(LEVELS[newLevel - 1]);
+  }
+
+  // Update UI
+  document.getElementById('statement-text').textContent = q.text;
+  document.getElementById('q-num').textContent = state.qIndex + 1;
+  document.getElementById('q-total').textContent = total;
+  document.getElementById('level-display').textContent = LEVELS[state.level - 1].name;
+  document.getElementById('score-display').textContent = state.score;
+
+  // Lives
+  const livesEl = document.getElementById('lives-display');
+  livesEl.innerHTML = '';
+  for (let i = 0; i < MAX_LIVES; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart' + (i >= state.lives ? ' lost' : '');
+    h.textContent = '❤️';
+    livesEl.appendChild(h);
+  }
+
+  // Progress dots
+  const dotsEl = document.getElementById('progress-dots');
+  dotsEl.innerHTML = '';
+  const start = Math.max(0, state.qIndex - 4);
+  const end = Math.min(total, start + 10);
+  for (let i = start; i < end; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < state.qIndex ? ' done' : i === state.qIndex ? ' current' : '');
+    dotsEl.appendChild(d);
+  }
+
+  // Streak
+  updateStreakUI();
+
+  // Hide feedback
+  const overlay = document.getElementById('feedback-overlay');
+  overlay.className = 'feedback-overlay';
+  state.answered = false;
+
+  // Enable buttons
+  document.querySelectorAll('.btn-answer').forEach(b => b.disabled = false);
+
+  // Start timer
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(state.timerInterval);
+  const maxTime = LEVELS[state.level - 1].time;
+  state.timeLeft = maxTime;
+  updateTimerBar(1);
+
+  state.timerInterval = setInterval(() => {
+    state.timeLeft -= 0.1;
+    const pct = state.timeLeft / maxTime;
+    updateTimerBar(pct);
+
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timerInterval);
+      if (!state.answered) {
+        timeOut();
+      }
+    }
+  }, 100);
+}
+
+function updateTimerBar(pct) {
+  const bar = document.getElementById('timer-bar');
+  bar.style.width = (pct * 100) + '%';
+  bar.style.background = pct > 0.5 ? 'var(--purple)' : pct > 0.25 ? '#d97706' : '#dc2626';
+}
+
+function timeOut() {
+  state.answered = true;
+  state.streak = 0;
+  state.lives--;
+  updateStreakUI();
+  showFeedback(false, null, 'Time\'s up! You needed to answer faster.', state.questions[state.qIndex]);
+  if (state.lives <= 0) {
+    setTimeout(endGame, 1800);
+  }
+}
+
+function answer(choice) {
+  if (state.answered) return;
+  state.answered = true;
+  clearInterval(state.timerInterval);
+  document.querySelectorAll('.btn-answer').forEach(b => b.disabled = true);
+
+  const q = state.questions[state.qIndex];
+  const correct = choice === q.answer;
+
+  if (correct) {
+    const timeBonus = Math.floor(state.timeLeft * 5);
+    const multiplier = getMultiplier();
+    const points = Math.floor((100 + timeBonus) * multiplier);
+    state.score += points;
+    state.streak++;
+    state.correct++;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+    document.getElementById('score-display').textContent = state.score;
+    updateStreakUI();
+    showFeedback(true, `+${points} pts`, q.explanation, q);
+  } else {
+    state.streak = 0;
+    state.lives--;
+    updateStreakUI();
+    const correctLabel = q.answer.charAt(0).toUpperCase() + q.answer.slice(1);
+    showFeedback(false, `It was ${correctLabel}`, q.explanation, q);
+    // Update lives display
+    const livesEl = document.getElementById('lives-display');
+    const hearts = livesEl.querySelectorAll('.heart');
+    for (let i = hearts.length - 1; i >= 0; i--) {
+      if (!hearts[i].classList.contains('lost')) {
+        hearts[i].classList.add('lost');
+        break;
+      }
+    }
+    if (state.lives <= 0) {
+      setTimeout(endGame, 2000);
+    }
+  }
+}
+
+function getMultiplier() {
+  if (state.streak >= 7) return 3;
+  if (state.streak >= 5) return 2.5;
+  if (state.streak >= 3) return 2;
+  if (state.streak >= 2) return 1.5;
+  return 1;
+}
+
+function updateStreakUI() {
+  document.getElementById('streak-display').textContent = state.streak;
+  const mult = getMultiplier();
+  document.getElementById('multiplier-display').textContent = mult + '×';
+  const chip = document.getElementById('streak-chip');
+  if (state.streak >= 2) {
+    chip.textContent = '🔥 ' + state.streak + 'x Streak!';
+    chip.classList.add('show');
+  } else {
+    chip.classList.remove('show');
+  }
+}
+
+function showFeedback(correct, points, explanation, q) {
+  const overlay = document.getElementById('feedback-overlay');
+  document.getElementById('feedback-icon').textContent = correct ? '✅' : '❌';
+  document.getElementById('feedback-result').textContent = correct
+    ? (points ? `Correct! ${points}` : 'Correct!')
+    : (points || 'Incorrect');
+  document.getElementById('feedback-explanation').textContent = explanation;
+  overlay.className = 'feedback-overlay show ' + (correct ? 'correct' : 'wrong');
+}
+
+function nextQuestion() {
+  if (state.lives <= 0) {
+    endGame();
+    return;
+  }
+  state.qIndex++;
+  if (state.qIndex >= state.questions.length) {
+    endGame(true);
+    return;
+  }
+  renderQuestion();
+}
+
+function showLevelBanner(lvl) {
+  const banner = document.getElementById('lvlbanner');
+  document.getElementById('lvl-name-text').textContent = lvl.name;
+  document.getElementById('lvl-tag-text').textContent = lvl.tag;
+  banner.classList.add('show');
+  setTimeout(() => banner.classList.remove('show'), 2200);
+}
+
+function endGame(completed = false) {
+  clearInterval(state.timerInterval);
+  const best = getBest();
+  const isNew = state.score > best;
+  if (isNew) setBest(state.score);
+
+  document.getElementById('final-score').textContent = state.score;
+  document.getElementById('final-correct').textContent = state.correct;
+  document.getElementById('final-best-streak').textContent = state.bestStreak;
+  document.getElementById('final-best').textContent = isNew ? state.score : best;
+
+  document.getElementById('over-title').textContent = completed ? 'You Finished! 🎉' : 'Game Over';
+  document.getElementById('over-subtitle').textContent = completed
+    ? 'You completed all ' + state.questions.length + ' statements!'
+    : 'You ran out of lives.';
+
+  const badge = document.getElementById('new-best-badge');
+  badge.className = 'new-best' + (isNew ? ' show' : '');
+
+  document.getElementById('best-display').textContent = isNew ? state.score : best;
+  showScreen('over-screen');
+}
+
+function getBest() {
+  return parseInt(localStorage.getItem('biasbuster_best') || '0');
+}
+function setBest(val) {
+  localStorage.setItem('biasbuster_best', val);
+}
+
+// Init best score on page load
+document.getElementById('best-display').textContent = getBest();
+</script>
+</body>
+</html>
